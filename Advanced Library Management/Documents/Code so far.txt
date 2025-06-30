@@ -1,0 +1,361 @@
+Project folder contains:
+library_main.py
+imports.py
+modules (folder)
+
+----------------------
+
+imports.py code:
+
+from modules.adding_branches import add_library_branch, add_library_branches
+from modules.adding_books import add_book, add_books
+from modules.adding_members import register_member, register_members
+from modules.wait_fine_issue_return import add_to_waitlist, calculate_fine, issue_book, issue_books, return_book, return_books
+
+-------------------------------------------
+
+library_main.py code:
+
+import sys
+sys.path.append('./modules')
+
+from datetime import date, timedelta
+from imports import *
+
+library_branches = {}
+library_members = {}
+
+add_library_branches(library_branches)
+add_books(library_branches)
+register_members(library_members, library_branches)
+issue_books(library_members, library_branches)
+return_books(library_members, library_branches)
+
+--------------------------------------------------------------------
+
+modules folder contains:
+adding_books.py
+adding_branches.py
+adding_members.py
+wait_fine_issue_return.py
+---------------------------------------
+adding_books.py code:
+def add_book(isbn, title, author, genre, copies, book_type, branch_id, library_branches):
+
+    books= library_branches[branch_id]["books"]
+
+    books[isbn]={
+        "title":title,
+        "author":author,
+        "genre":genre,
+        "copies":copies,
+        "book_type":book_type
+    }
+    
+    print(f"Book '{title}' having ISBN:{isbn} successfully added to branch:{branch_id}")    
+
+def add_books(library_branches):
+    # if "books" not in library_branches[branch_id]:
+    #     library_branches[branch_id]["books"]={}
+        
+    # books= library_branches[branch_id]["books"]
+    
+    while True:
+        print("\nAdding new book: ")
+        branch_id= input("Enter branch id: ")
+        if branch_id not in library_branches:
+            print("Branch does not exist.")
+            continue
+
+        if "books" not in library_branches[branch_id]:
+            library_branches[branch_id]["books"]={}
+        books= library_branches[branch_id]["books"]
+
+        isbn = input("Enter book ISBN: ").strip()
+        if isbn in books:
+            print(f"Book with ISBN: {isbn} already exists in branch: {branch_id}.")
+            continue
+        title = input("Enter book title: ").strip()
+        author = input("Enter author: ").strip()
+        genre = input("Enter genre: ").strip()
+        copies = input("Enter number of copies: ").strip()
+        book_type = input("Enter book type (physical/digital): ").strip().lower()
+
+        if book_type not in ['physical','digital']:
+            print("Book type must be - physical or digital.")
+            continue
+
+        add_book(isbn, title, author, genre, int(copies), book_type, branch_id, library_branches)
+
+        cont= input("Add another book to this branch? (yes/no): ").strip().lower()
+        if cont !='yes':
+            break
+
+----------------------------------------------------------------------
+adding_branches.py code:
+
+def add_library_branch(branch_id, location, operating_hours, library_branches):
+
+    library_branches[branch_id]={
+        "location": location,
+        "operating_hours": operating_hours
+    }
+    print(f"Branch {branch_id} at {location} added Successfully.")
+
+def add_library_branches(library_branches):
+    while True:
+        print("Add a new Library Branch:")
+        branch_id= input("Enter branch id: ").strip()
+        if branch_id in library_branches:
+            print(f"{branch_id} already exists!")
+            continue
+        location= input("Enter location: ").strip()
+        operating_hours= input("Enter operating hours: ").strip()
+    
+        add_library_branch(branch_id, location, operating_hours, library_branches)
+
+        cont= input("Add another branch? (yes/no): ").strip().lower()
+        if cont !='yes':
+            break
+        
+-------------------------------------------------------------------------------------------
+
+adding_members.py code :
+
+def register_member(member_id, name, contact, membership_type, branch_id, library_members):
+
+    library_members[member_id]={
+        'name':name,
+        'contact':contact,
+        'membership_type':membership_type,
+        'branch_id':branch_id
+    }
+    print(f"Member: '{name}', registered with ID: {member_id} at branch: {branch_id}, with {membership_type} membership. ")
+
+def register_members(library_members, library_branches):
+    while True:
+        print("\nAdding a new member.")
+        branch_id= input("Enter branch id: ")
+        if branch_id not in library_branches:
+            print("Branch does not exist")
+            continue
+
+        member_id= input("Enter member ID: ")
+        if member_id in library_members:
+            print(f"Member ID:{member_id} already exists")
+            continue
+        name= input("Enter name: ")
+        contact= input("Enter contact number: ")
+        membership_type= input("Enter membership type (standard/premium): ").strip().lower()
+
+        if membership_type not in ['standard', 'premium']:
+            print("Membership type must be either Standard or Premium only.")
+        
+        register_member(member_id, name, contact, membership_type, branch_id, library_members)
+
+        cont= input("Add another member? (yes/no): ").strip().lower()
+        if cont != 'yes':
+            break
+
+
+-------------------------------------------------------------------------------
+wait_fine_issue_return.py code:
+
+# This file contains the following functions:
+# add_to_waitlist
+# calculate_fine
+# return_book
+# issue_book
+# issue_books
+# return_books
+
+from datetime import date, timedelta
+
+##########################################################################################################
+
+def add_to_waitlist(member_id, isbn, waitlist):
+    if isbn not in waitlist:
+        waitlist[isbn]= []
+    if member_id in waitlist[isbn]:
+        print(f"Member '{member_id}' is already in waitlist for book with ISBN:{isbn} ")
+    else:
+        waitlist[isbn].append(member_id)
+        print(f"Member '{member_id}' added to the waitlist for book ISBN:{isbn}.")
+    ###### JUST PRITING TO SEE THE CONTENTS
+    print(waitlist)
+
+###########################################################################################################
+
+def calculate_fine(issue_record):
+    due_date=issue_record["due_date"]
+    today= date.today()
+
+    if today > due_date:
+        late_days= (today - due_date).days
+        fine = late_days * 10
+        return fine
+    else:
+        return 0
+
+###########################################################################################################
+
+def return_book(member_id, isbn, library_members, library_branches, waitlist):
+        member= library_members[member_id]
+        branch_id= member['branch_id']
+        fine=0
+        books_issued = member.get('books_issued', [])
+        for book in books_issued:
+            if book['isbn']==isbn and book['branch_id']==branch_id:
+                fine= calculate_fine(book)
+                books_issued.remove(book)
+                break
+        
+        # library_branches[branch_id]["books"]['isbn']["copies"] +=1
+        library_branches[branch_id]["books"][isbn]["copies"] +=1
+
+        print(f"Book with ISBN:{isbn} successfully returned by member with ID:{member_id}.")
+        if fine > 0:
+            print(f"Fine: ₹{fine}. Returned {fine//10} days late.")
+        else:
+            print("Book returned on time. No Fine imposed.")
+
+        if isbn in waitlist and waitlist[isbn]:
+            next_member_id = waitlist[isbn].pop(0)
+            print(f"Book with ISBN:{isbn} will now be issued to waitlisted member with ID:{next_member_id}.")
+            issue_book(next_member_id, isbn, library_members, library_branches)
+    
+###########################################################################################################
+
+def issue_book(member_id, isbn, library_members, library_branches):
+    branch_id= library_members[member_id]['branch_id']
+    book= library_branches[branch_id]["books"][isbn]
+    book["copies"] -=1
+
+    if "books_issued" not in library_members[member_id]:
+        library_members[member_id]["books_issued"]= []
+
+    if "books_issued" in library_members[member_id]:
+        today = date.today()
+
+        if library_members[member_id]["membership_type"] == "standard":
+            due_duration= 15
+        else:
+            due_duration= 30
+
+        due_date= today + timedelta(days= due_duration)
+ 
+        library_members[member_id]["books_issued"].append({
+            "isbn":isbn,
+            "branch_id":branch_id,
+            "issue_date": today,
+            "due_date": due_date
+        })
+        print(f"Book {book['title']}, ISBN:{isbn} issued to member:{member_id} from branch:{branch_id}.")
+        print(f"Issued on: {today}. Due by: {due_date}")
+###########################################################################################################
+
+def issue_books(library_members, library_branches, waitlist):
+    while True:
+        print("Issuing a book to member.")
+        member_id= input("Enter member id: ")
+        if member_id not in library_members:
+            print(f"Member ID: {member_id} does not exist.")
+            continue
+        member= library_members[member_id]
+        branch_id=member["branch_id"]
+
+        branch_books= library_branches[branch_id].get('books', {})
+        
+        limit = 5 if member['membership_type']=='standard' else 10
+        #if "books_issued" in library_members[member_id]:
+        books_issued_len = len(member.get('books_issued',[]))
+
+        isbn= input("Enter the ISBN number: ")
+        if isbn in branch_books:
+            book= branch_books[isbn]
+
+        elif isbn not in branch_books:
+            print(f"The book with ISBN:{isbn} is not available in this library.")
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+            else:
+                continue
+
+        #To prevent the member from being issued the book while already having a copy of it:
+        already_issued = False
+        if "books_issued" in library_members[member_id]:
+            for i in library_members[member_id]["books_issued"]:
+                if i["isbn"] == isbn:
+                    already_issued = True
+                    break
+        if already_issued:
+            print(f"Member {member_id} already has a copy of the book with ISBN:{isbn}!")
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+            else:
+                continue
+
+        elif books_issued_len >= limit:
+            print(f"Member has reached their issue limit: {limit}.")
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+            else:
+                continue
+        
+        elif isbn in waitlist and member_id in waitlist[isbn]:
+            print(f"Member '{member_id}' is already in waitlist for book with ISBN:{isbn} ")
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+            else:
+                continue
+
+        elif book["copies"]<=0:
+            print(f"No copies of the book '{book['title']}' are currently availabe.\nMember will be added to the waitlist if their issue-limit is not exceeded.")
+            add_to_waitlist(member_id, isbn, waitlist)
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+            else:
+                continue
+        
+        # if all good, then issue book:
+        else:
+            issue_book(member_id, isbn, library_members, library_branches)
+            cont=input("\nIssue another book? (yes/no): ").strip().lower()
+            if cont !='yes':
+                break
+
+###########################################################################################################
+
+def return_books(library_members, library_branches, waitlist):
+    while True:
+        print("Returning a book.")
+        member_id= input("Enter member ID: ").strip()
+        if member_id not in library_members:
+            print(f"Member '{member_id}' does not exist.")
+            continue
+        isbn = input("Enter Book's ISBN: ").strip()
+        ####
+
+        member = library_members[member_id]
+        branch_id= member['branch_id']
+        books_issued = member.get('books_issued', [])
+
+        found = False
+        for book in books_issued:
+            if book['isbn'] == isbn and book['branch_id']==branch_id:
+                return_book(member_id, isbn, library_members, library_branches, waitlist)
+                found= True
+                break
+        if not found:
+            print(f"Member {member_id} has not borrowed book with ISBN:{isbn} from branch:{branch_id}.")
+
+        cont = input("Return another book? (yes/no): ").strip().lower()
+        if cont != 'yes':
+            break
+
+###########################################################################################################

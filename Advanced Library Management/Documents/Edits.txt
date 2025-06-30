@@ -46,3 +46,15 @@ def add_library_branches():
         if cont !='yes':
             break
         
+
+_____________________
+______________________________________________
+
+found = 'not found'
+        for book in books_issued:
+            if book['isbn'] == isbn and book['branch_id']==branch_id:
+                found= 'found'
+                return_book(member_id, isbn, library_members, library_branches, waitlist)
+                break
+            elif found == 'not found':
+                print(f"Member {member_id} has not borrowed book with ISBN:{isbn} from branch:{branch_id}.")
