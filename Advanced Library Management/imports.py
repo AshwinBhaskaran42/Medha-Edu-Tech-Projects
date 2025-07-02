@@ -2,5 +2,9 @@
 from modules.adding_branches import add_library_branch, add_library_branches
 from modules.adding_books import add_book, add_books
 from modules.adding_members import register_member, register_members
-from modules.wait_fine_issue_return import add_to_waitlist, calculate_fine, issue_book, issue_books, return_book, return_books
-
+from modules.wait_fine_issue_return import add_to_waitlist, calculate_fine, issue_book, issue_books, return_book, return_books, add_copies
+from modules.recommendations import generate_recommendations
+from modules.analyze_pattern import analyze_reading_patterns
+from modules.popular_books import generate_popular_books_report
+from modules.reading_challenge import track_reading_challenge
+from modules.member_profile import view_member_profile

@@ -5,6 +5,7 @@
 # issue_book
 # issue_books
 # return_books
+# add_copies
 
 from datetime import date, timedelta
 
@@ -23,43 +24,88 @@ def add_to_waitlist(member_id, isbn, waitlist):
 
 ###########################################################################################################
 
-def calculate_fine(issue_record):
+def calculate_fine(issue_record, lost_damaged):
     due_date=issue_record["due_date"]
     today= date.today()
 
-    if today > due_date:
+    fine=0
+    if lost_damaged=='yes':
+        fine=500
+
+    if today < due_date:
+        return fine
+    elif today > due_date:
         late_days= (today - due_date).days
-        fine = late_days * 10
+        fine = fine + late_days * 10
         return fine
     else:
         return 0
 
 ###########################################################################################################
 
-def return_book(member_id, isbn, library_members, library_branches, waitlist):
+def return_book(member_id, isbn, library_members, library_branches, waitlist, lost_damaged):
         member= library_members[member_id]
         branch_id= member['branch_id']
         fine=0
+        today= date.today()
         books_issued = member.get('books_issued', [])
+        
+        
         for book in books_issued:
             if book['isbn']==isbn and book['branch_id']==branch_id:
-                fine= calculate_fine(book)
+                issue_date= book["issue_date"]
+                due_date= book['due_date']
+                fine= calculate_fine(book, lost_damaged)
                 books_issued.remove(book)
                 break
         
-        # library_branches[branch_id]["books"]['isbn']["copies"] +=1
-        library_branches[branch_id]["books"][isbn]["copies"] +=1
+        # for book in books_issued:
+        #     if isbn == book['isbn']:
+        #         due_date= book.get('due_date')
+        #         break
 
-        print(f"Book with ISBN:{isbn} successfully returned by member with ID:{member_id}.")
-        if fine > 0:
+        # library_branches[branch_id]["books"]['isbn']["copies"] +=1
+        if lost_damaged != 'yes':
+            library_branches[branch_id]["books"][isbn]["copies"] +=1
+
+        # print(f"Book with ISBN:{isbn} successfully returned by member with ID:{member_id}.")
+
+        if lost_damaged == 'yes' and today < due_date:
+            print(f"Book is lost/damaged. But due date has not been crossed.")
+            print(f"Fine: ₹{fine}")
+
+        elif lost_damaged == 'yes' and today > due_date:
+            print(f"Book is lost/damaged and due date has been crossed.")
+            print(f"Fine: ₹{fine}. {fine//10} days late.")
+
+        elif lost_damaged !='yes' and fine > 0:
             print(f"Fine: ₹{fine}. Returned {fine//10} days late.")
         else:
             print("Book returned on time. No Fine imposed.")
 
-        if isbn in waitlist and waitlist[isbn]:
+        if isbn in waitlist and waitlist[isbn] and library_branches[branch_id]["books"][isbn]["copies"]>0:
             next_member_id = waitlist[isbn].pop(0)
             print(f"Book with ISBN:{isbn} will now be issued to waitlisted member with ID:{next_member_id}.")
             issue_book(next_member_id, isbn, library_members, library_branches)
+
+        if 'books_read' not in library_members[member_id]:
+            library_members[member_id]['books_read']=[]
+        
+        already_recorded = False
+        for i in library_members[member_id]['books_read']:
+            if i['isbn'] == isbn and i['branch_id']== branch_id:
+                already_recorded= True
+                break
+        
+        if not already_recorded:
+            library_members[member_id]['books_read'].append({
+                "isbn":isbn,
+                "branch_id":branch_id,
+                "issue_date":issue_date,
+                "return_date":date.today()
+            })
+
+
     
 ###########################################################################################################
 
@@ -89,6 +135,7 @@ def issue_book(member_id, isbn, library_members, library_branches):
         })
         print(f"Book {book['title']}, ISBN:{isbn} issued to member:{member_id} from branch:{branch_id}.")
         print(f"Issued on: {today}. Due by: {due_date}")
+        library_members[member_id]["total_books_borrowed"] += 1
 ###########################################################################################################
 
 def issue_books(library_members, library_branches, waitlist):
@@ -187,7 +234,8 @@ def issue_books(library_members, library_branches, waitlist):
             cont=input("\nIssue another book? (yes/no): ").strip().lower()
             if cont !='yes':
                 break
-
+            else:
+                continue
 ###########################################################################################################
 
 def return_books(library_members, library_branches, waitlist):
@@ -198,6 +246,7 @@ def return_books(library_members, library_branches, waitlist):
             print(f"Member '{member_id}' does not exist.")
             continue
         isbn = input("Enter Book's ISBN: ").strip()
+        lost_damaged= input(f"Is the book damaged or lost (yes/no): ").strip()
         ####
 
         member = library_members[member_id]
@@ -207,7 +256,7 @@ def return_books(library_members, library_branches, waitlist):
         found = False
         for book in books_issued:
             if book['isbn'] == isbn and book['branch_id']==branch_id:
-                return_book(member_id, isbn, library_members, library_branches, waitlist)
+                return_book(member_id, isbn, library_members, library_branches, waitlist, lost_damaged)
                 found= True
                 break
         if not found:
@@ -216,5 +265,45 @@ def return_books(library_members, library_branches, waitlist):
         cont = input("Return another book? (yes/no): ").strip().lower()
         if cont != 'yes':
             break
+        else:
+            continue
 
 ###########################################################################################################
+
+def add_copies(library_branches,library_members,waitlist):
+    while True:
+        branch_id = input("Enter branch id: ")
+        if branch_id not in library_branches:
+            print("Branch does not exist.")
+            cont = input("Add copies to a book? (yes/no): ").strip().lower()
+            if cont != 'yes':
+                break
+            else:
+                continue
+    
+        isbn= input("Enter isbn number: ")
+        if isbn not in library_branches[branch_id]['books']:
+            print(f"Book with {isbn} does not exist in this branch.")
+            cont = input("Add copies to a book? (yes/no): ").strip().lower()
+            if cont != 'yes':
+                break
+            else:
+                continue
+        
+        copies_to_add = int(input("Enter no. of copies to add: "))
+        library_branches[branch_id]["books"][isbn]["copies"] += copies_to_add
+        print(f"Successfully added {copies_to_add} copies to book with ISBN:{isbn} in branch:{branch_id}.")
+
+        if isbn in waitlist and waitlist[isbn] and library_branches[branch_id]["books"][isbn]["copies"]>0:
+            next_member_id = waitlist[isbn].pop(0)
+            print(f"As copy/copies of book with ISBN:{isbn} has now become available, a copy will now be issued to waitlisted member with ID:{next_member_id}.")
+            issue_book(next_member_id, isbn, library_members, library_branches)
+            cont = input("Add copies to a book? (yes/no): ").strip().lower()
+            if cont != 'yes':
+                break
+            else:
+                continue
+
+
+    
+

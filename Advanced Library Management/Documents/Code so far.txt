@@ -11,6 +11,11 @@ from modules.adding_branches import add_library_branch, add_library_branches
 from modules.adding_books import add_book, add_books
 from modules.adding_members import register_member, register_members
 from modules.wait_fine_issue_return import add_to_waitlist, calculate_fine, issue_book, issue_books, return_book, return_books
+from modules.recommendations import generate_recommendations
+from modules.analyze_pattern import analyze_reading_patterns
+from modules.popular_books import generate_popular_books_report
+from modules.reading_challenge import track_reading_challenge
+from modules.member_profile import view_member_profile
 
 -------------------------------------------
 
@@ -24,12 +29,13 @@ from imports import *
 
 library_branches = {}
 library_members = {}
+waitlist={}
 
-add_library_branches(library_branches)
-add_books(library_branches)
-register_members(library_members, library_branches)
-issue_books(library_members, library_branches)
-return_books(library_members, library_branches)
+#add_library_branches(library_branches)
+#add_books(library_branches)
+#register_members(library_members, library_branches)
+#issue_books(library_members, library_branches)
+#return_books(library_members, library_branches)
 
 --------------------------------------------------------------------
 
@@ -82,15 +88,14 @@ def add_books(library_branches):
         book_type = input("Enter book type (physical/digital): ").strip().lower()
 
         if book_type not in ['physical','digital']:
-            print("Book type must be - physical or digital.")
+            print("Book type must be either: physical or digital.")
             continue
 
         add_book(isbn, title, author, genre, int(copies), book_type, branch_id, library_branches)
 
-        cont= input("Add another book to this branch? (yes/no): ").strip().lower()
+        cont= input("Add another book? (yes/no): ").strip().lower()
         if cont !='yes':
             break
-
 ----------------------------------------------------------------------
 adding_branches.py code:
 
@@ -117,7 +122,7 @@ def add_library_branches(library_branches):
         cont= input("Add another branch? (yes/no): ").strip().lower()
         if cont !='yes':
             break
-        
+                
 -------------------------------------------------------------------------------------------
 
 adding_members.py code :

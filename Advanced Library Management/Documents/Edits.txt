@@ -58,3 +58,23 @@ found = 'not found'
                 break
             elif found == 'not found':
                 print(f"Member {member_id} has not borrowed book with ISBN:{isbn} from branch:{branch_id}.")
+
+
+
+
+
+
+
+
+_______________________
+_____________________________________
+
+
+if challenge_input.isdigit():
+                challenge_goal = int(challenge_input)
+                if challenge_goal in [0,10, 20, 30, 40, 50]:
+                    break
+                else:
+                    print("Please choose from 0,10, 20, 30, 40, or 50.")
+            else:
+                print("Please enter a valid number (0,10, 20, 30, 40, or 50).")
